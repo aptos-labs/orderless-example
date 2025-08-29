@@ -1,0 +1,14 @@
+[package]
+name = "cookie_clicker"
+version = "1.0.0"
+authors = ["Cookie Clicker Team"]
+
+[addresses]
+cookie_clicker = "_"
+
+[dependencies]
+AptosFramework = { git = "https://github.com/aptos-labs/aptos-framework.git", subdir = "aptos-framework", rev = "main" }
+
+[dev-addresses]
+
+[dev-dependencies]
