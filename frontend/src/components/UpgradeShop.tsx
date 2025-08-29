@@ -3,14 +3,14 @@ import { Card, Button, Typography, Row, Col, message } from 'antd';
 import { ShoppingCartOutlined, CheckOutlined } from '@ant-design/icons';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useGameState } from '../hooks/useGameState';
-import { buyUpgrade } from '../utils/transactionUtils';
+import { universalBuyUpgrade } from '../utils/transactionUtils';
 import { GAME_CONSTANTS } from '../utils/aptosClient';
 
 const { Title, Text } = Typography;
 
 const UpgradeShop: React.FC = () => {
   const wallet = useWallet();
-  const { gameStats, upgrades, optimisticCookies, transactionManager } = useGameState();
+  const { gameStats, upgrades, optimisticCookies, transactionManager, currentAccount, accountType } = useGameState();
   const [purchasing, setPurchasing] = useState<number | null>(null);
 
   if (!gameStats || !upgrades) {
@@ -45,7 +45,7 @@ const UpgradeShop: React.FC = () => {
     setPurchasing(upgradeId);
 
     try {
-      await buyUpgrade(wallet, transactionManager, upgradeId);
+      await universalBuyUpgrade(currentAccount, wallet, accountType, transactionManager, upgradeId);
       message.success(`${GAME_CONSTANTS.UPGRADE_NAMES[upgradeId]} purchased!`);
     } catch (error: any) {
       console.error('Purchase failed:', error);

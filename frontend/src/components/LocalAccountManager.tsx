@@ -28,10 +28,10 @@ const LocalAccountManager: React.FC<LocalAccountManagerProps> = ({ onAccountRead
   const [balance, setBalance] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [showPrivateKey, setShowPrivateKey] = useState(false);
-  const [exportModalVisible, setExportModalVisible] = useState(false);
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [importData, setImportData] = useState('');
   const [fundingModalVisible, setFundingModalVisible] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   
   const { connected, account: walletAccount, signAndSubmitTransaction } = useWallet();
 
@@ -92,14 +92,16 @@ const LocalAccountManager: React.FC<LocalAccountManagerProps> = ({ onAccountRead
 
     setLoading(true);
     try {
-      // Send 0.1 APT (100000000 octas) to the local account
-      const transaction = {
-        function: '0x1::aptos_account::transfer',
-        arguments: [accountData.address, '100000000'],
-        type: 'entry_function_payload',
-      };
-
-      const response = await signAndSubmitTransaction(transaction);
+      // Send 0.1 APT (100000000 octas) to the local account  
+      await signAndSubmitTransaction({
+        data: {
+          function: '0x1::aptos_account::transfer',
+          functionArguments: [accountData.address, '100000000'],
+        },
+        options: {
+            replayProtectionNonce: Math.floor(Math.random() * 1000000),
+        }
+      });
       message.success('Funding transaction submitted!');
       
       // Wait a bit then check balance
@@ -130,6 +132,9 @@ const LocalAccountManager: React.FC<LocalAccountManagerProps> = ({ onAccountRead
           function: `${FULL_MODULE_ADDRESS}::initialize_player`,
           functionArguments: [],
         },
+        options: {
+            replayProtectionNonce: Math.floor(Math.random() * 1000000),
+        }
       });
 
       const committedTxn = await aptos.signAndSubmitTransaction({
@@ -223,8 +228,9 @@ const LocalAccountManager: React.FC<LocalAccountManagerProps> = ({ onAccountRead
     <Card title="Local Account Manager" className="mb-6">
       <Space direction="vertical" size="large" className="w-full">
         {/* Account Info */}
-        <div>
-          <Title level={4}>Your Local Account</Title>
+        {!isPlaying && (
+          <div>
+            <Title level={4}>Your Local Account</Title>
           <Space direction="vertical" size="small" className="w-full">
             <div className="flex items-center justify-between">
               <Text strong>Address:</Text>
@@ -271,11 +277,13 @@ const LocalAccountManager: React.FC<LocalAccountManagerProps> = ({ onAccountRead
               </Space>
             </div>
           </Space>
-        </div>
+          </div>
+        )}
 
         {/* Setup Steps */}
-        <div>
-          <Title level={4}>Setup Progress</Title>
+        {!isPlaying && (
+          <div>
+            <Title level={4}>Setup Progress</Title>
           <Steps current={currentStep} direction="vertical">
             <Step
               title="Fund Account"
@@ -293,11 +301,12 @@ const LocalAccountManager: React.FC<LocalAccountManagerProps> = ({ onAccountRead
               icon={<CheckCircleOutlined />}
             />
           </Steps>
-        </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <Space wrap>
-          {currentStep === 0 && (
+          {!isPlaying && currentStep === 0 && (
             <>
               <Button 
                 type="primary" 
@@ -312,7 +321,7 @@ const LocalAccountManager: React.FC<LocalAccountManagerProps> = ({ onAccountRead
             </>
           )}
           
-          {currentStep === 1 && (
+          {!isPlaying && currentStep === 1 && (
             <Button 
               type="primary" 
               onClick={handleInitializeGame}
@@ -323,27 +332,72 @@ const LocalAccountManager: React.FC<LocalAccountManagerProps> = ({ onAccountRead
             </Button>
           )}
 
-          <Button 
-            onClick={handleExport}
-            icon={<ExportOutlined />}
-          >
-            Export Account
-          </Button>
-          
-          <Button 
-            onClick={() => setImportModalVisible(true)}
-            icon={<ImportOutlined />}
-          >
-            Import Account
-          </Button>
-          
-          <Button 
-            danger 
-            onClick={handleDeleteAccount}
-            icon={<DeleteOutlined />}
-          >
-            Delete Account
-          </Button>
+          {currentStep === 2 && !isPlaying && (
+            <Button 
+              type="primary" 
+              size="large"
+              onClick={() => {
+                const account = localAccountManager.getAccount();
+                onAccountReady(account);
+                setIsPlaying(true);
+                // Scroll to game area
+                setTimeout(() => {
+                  const gameElement = document.getElementById('game-container');
+                  if (gameElement) {
+                    gameElement.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }, 100);
+              }}
+              icon={<CheckCircleOutlined />}
+              className="bg-green-600 border-green-600 hover:bg-green-700"
+            >
+              🍪 Play with Local Account
+            </Button>
+          )}
+
+          {currentStep === 2 && isPlaying && (
+            <div className="text-center p-4 bg-green-100 rounded-lg border border-green-300">
+              <Text className="text-green-700 font-medium">
+                ✅ Playing with Local Account - Scroll down to see the game!
+              </Text>
+              <div className="mt-2">
+                <Button 
+                  type="link" 
+                  size="small"
+                  onClick={() => setIsPlaying(false)}
+                  className="text-green-600"
+                >
+                  Show Account Manager
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!isPlaying && (
+            <>
+              <Button 
+                onClick={handleExport}
+                icon={<ExportOutlined />}
+              >
+                Export Account
+              </Button>
+              
+              <Button 
+                onClick={() => setImportModalVisible(true)}
+                icon={<ImportOutlined />}
+              >
+                Import Account
+              </Button>
+              
+              <Button 
+                danger 
+                onClick={handleDeleteAccount}
+                icon={<DeleteOutlined />}
+              >
+                Delete Account
+              </Button>
+            </>
+          )}
         </Space>
       </Space>
 

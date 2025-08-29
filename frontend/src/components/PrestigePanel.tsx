@@ -3,14 +3,14 @@ import { Card, Button, Typography, Progress, message, Modal } from 'antd';
 import { StarOutlined, TrophyOutlined, WarningOutlined } from '@ant-design/icons';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useGameState } from '../hooks/useGameState';
-import { prestigeReset } from '../utils/transactionUtils';
+import { universalPrestige } from '../utils/transactionUtils';
 import { GAME_CONSTANTS } from '../utils/aptosClient';
 
 const { Title, Text, Paragraph } = Typography;
 
 const PrestigePanel: React.FC = () => {
   const wallet = useWallet();
-  const { gameStats, optimisticCookies, transactionManager } = useGameState();
+  const { gameStats, optimisticCookies, transactionManager, currentAccount, accountType } = useGameState();
   const [prestiging, setPrestiging] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -40,7 +40,7 @@ const PrestigePanel: React.FC = () => {
     setShowConfirmModal(false);
 
     try {
-      await prestigeReset(wallet, transactionManager);
+      await universalPrestige(currentAccount, wallet, accountType, transactionManager);
       message.success(`Prestige successful! Gained ${prestigePoints} prestige points!`);
     } catch (error: any) {
       console.error('Prestige failed:', error);

@@ -2,7 +2,8 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, Button, Typography, message } from 'antd';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useGameState } from '../hooks/useGameState';
-import { submitMultipleClicks } from '../utils/transactionUtils';
+import { submitMultipleClicks, UniversalTransactionExecutor } from '../utils/transactionUtils';
+import { CONTRACT_FUNCTIONS } from '../utils/aptosClient';
 
 const { Title, Text } = Typography;
 
@@ -22,6 +23,8 @@ const CookieDisplay: React.FC = () => {
     addPendingClicks,
     transactionManager,
     pendingClicks,
+    currentAccount,
+    accountType,
   } = useGameState();
 
   const [isClicking, setIsClicking] = useState(false);
@@ -113,7 +116,43 @@ const CookieDisplay: React.FC = () => {
 
     try {
       setIsClicking(true);
-      await submitMultipleClicks(wallet, transactionManager, clicksToSubmit, clickMultiplier);
+      
+      if (accountType === 'local' && currentAccount) {
+        // Use local account for transactions
+        const executor = new UniversalTransactionExecutor(currentAccount, null, 'local');
+        const promises: Promise<string>[] = [];
+        
+        for (let i = 0; i < clicksToSubmit; i++) {
+          const promise = executor.executeTransaction(CONTRACT_FUNCTIONS.CLICK_COOKIE, []);
+          promises.push(promise);
+          
+          // Add to transaction manager
+          const transactionId = `click_${Date.now()}_${Math.random()}`;
+          transactionManager.addToQueue({
+            id: transactionId,
+            type: 'click',
+            status: 'pending',
+          });
+          
+          // Update status when transaction resolves
+          promise.then((hash) => {
+            transactionManager.updateTransaction(transactionId, {
+              status: 'submitted',
+              hash: hash,
+            });
+          }).catch((error) => {
+            transactionManager.updateTransaction(transactionId, {
+              status: 'failed',
+            });
+          });
+        }
+        
+        // Wait for all transactions to be submitted
+        await Promise.all(promises);
+      } else {
+        // Use wallet for transactions
+        await submitMultipleClicks(wallet, transactionManager, clicksToSubmit, clickMultiplier);
+      }
       
       if (clicksToSubmit > 1) {
         message.success(`Submitted ${clicksToSubmit} clicks! (Orderless processing)`);
@@ -134,7 +173,9 @@ const CookieDisplay: React.FC = () => {
     setOptimisticCookies, 
     addPendingClicks, 
     rapidClickCount, 
-    lastClickTime
+    lastClickTime,
+    accountType,
+    currentAccount
   ]);
 
   const formatNumber = (num: number): string => {

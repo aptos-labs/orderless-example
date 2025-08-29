@@ -92,9 +92,12 @@ export class UniversalTransactionExecutor {
     const transaction = await aptos.transaction.build.simple({
       sender: this.localAccount.accountAddress,
       data: {
-        function: functionName,
-        arguments: args,
+        function: functionName as `${string}::${string}::${string}`,
+        functionArguments: args,
       },
+        options: {
+            replayProtectionNonce: Math.floor(Math.random() * 1000000),
+        }
     });
 
     const committedTxn = await aptos.signAndSubmitTransaction({
@@ -111,13 +114,101 @@ export class UniversalTransactionExecutor {
     }
 
     const response = await this.wallet.signAndSubmitTransaction({
-      function: functionName,
-      arguments: args,
-      type: 'entry_function_payload',
+      data: {
+        function: functionName as `${string}::${string}::${string}`,
+        functionArguments: args,
+      },
+        options: {
+            replayProtectionNonce: Math.floor(Math.random() * 1000000),
+        }
     });
 
     return response.hash;
   }
+}
+
+// Universal transaction functions that work with both wallet and local accounts
+export async function universalBuyUpgrade(
+  currentAccount: any,
+  wallet: any,
+  accountType: 'wallet' | 'local' | null,
+  manager: TransactionManager,
+  upgradeId: number
+): Promise<string> {
+  const executor = new UniversalTransactionExecutor(currentAccount, wallet, accountType);
+  const hash = await executor.executeTransaction(CONTRACT_FUNCTIONS.BUY_UPGRADE, [upgradeId]);
+  
+  const transactionId = `upgrade_${Date.now()}_${Math.random()}`;
+  manager.addToQueue({
+    id: transactionId,
+    type: 'upgrade',
+    status: 'submitted',
+    hash: hash,
+  });
+  
+  return hash;
+}
+
+export async function universalBuyAutoClicker(
+  currentAccount: any,
+  wallet: any,
+  accountType: 'wallet' | 'local' | null,
+  manager: TransactionManager,
+  autoClickerId: number,
+  quantity: number = 1
+): Promise<string> {
+  const executor = new UniversalTransactionExecutor(currentAccount, wallet, accountType);
+  const hash = await executor.executeTransaction(CONTRACT_FUNCTIONS.BUY_AUTO_CLICKER, [autoClickerId, quantity]);
+  
+  const transactionId = `auto_clicker_${Date.now()}_${Math.random()}`;
+  manager.addToQueue({
+    id: transactionId,
+    type: 'auto_clicker',
+    status: 'submitted',
+    hash: hash,
+  });
+  
+  return hash;
+}
+
+export async function universalCollectPassive(
+  currentAccount: any,
+  wallet: any,
+  accountType: 'wallet' | 'local' | null,
+  manager: TransactionManager
+): Promise<string> {
+  const executor = new UniversalTransactionExecutor(currentAccount, wallet, accountType);
+  const hash = await executor.executeTransaction(CONTRACT_FUNCTIONS.COLLECT_PASSIVE_COOKIES, []);
+  
+  const transactionId = `collect_passive_${Date.now()}_${Math.random()}`;
+  manager.addToQueue({
+    id: transactionId,
+    type: 'collect_passive',
+    status: 'submitted',
+    hash: hash,
+  });
+  
+  return hash;
+}
+
+export async function universalPrestige(
+  currentAccount: any,
+  wallet: any,
+  accountType: 'wallet' | 'local' | null,
+  manager: TransactionManager
+): Promise<string> {
+  const executor = new UniversalTransactionExecutor(currentAccount, wallet, accountType);
+  const hash = await executor.executeTransaction(CONTRACT_FUNCTIONS.PRESTIGE, []);
+  
+  const transactionId = `prestige_${Date.now()}_${Math.random()}`;
+  manager.addToQueue({
+    id: transactionId,
+    type: 'prestige',
+    status: 'submitted',
+    hash: hash,
+  });
+  
+  return hash;
 }
 
 export async function submitTransaction(
@@ -209,6 +300,9 @@ export async function submitMultipleClicks(
       data: {
         function: CONTRACT_FUNCTIONS.CLICK_COOKIE,
         functionArguments: [],
+        options: {
+            replayProtectionNonce: Math.floor(Math.random() * 1000000),
+        }
       },
     };
 
@@ -248,6 +342,9 @@ export async function initializePlayer(wallet: WalletContextState): Promise<stri
     data: {
       function: CONTRACT_FUNCTIONS.INITIALIZE_PLAYER,
       functionArguments: [],
+        options: {
+            replayProtectionNonce: Math.floor(Math.random() * 1000000),
+        }
     },
   };
 
@@ -270,6 +367,9 @@ export async function buyUpgrade(
     data: {
       function: CONTRACT_FUNCTIONS.BUY_UPGRADE,
       functionArguments: [upgradeId],
+        options: {
+            replayProtectionNonce: Math.floor(Math.random() * 1000000),
+        }
     },
   };
 
@@ -291,6 +391,9 @@ export async function buyAutoClicker(
     data: {
       function: CONTRACT_FUNCTIONS.BUY_AUTO_CLICKER,
       functionArguments: [typeId, quantity],
+        options: {
+            replayProtectionNonce: Math.floor(Math.random() * 1000000),
+        }
     },
   };
 
@@ -310,6 +413,9 @@ export async function collectPassiveCookies(
     data: {
       function: CONTRACT_FUNCTIONS.COLLECT_PASSIVE_COOKIES,
       functionArguments: [],
+        options: {
+            replayProtectionNonce: Math.floor(Math.random() * 1000000),
+        }
     },
   };
 
@@ -329,6 +435,9 @@ export async function prestigeReset(
     data: {
       function: CONTRACT_FUNCTIONS.PRESTIGE,
       functionArguments: [],
+        options: {
+            replayProtectionNonce: Math.floor(Math.random() * 1000000),
+        }
     },
   };
 

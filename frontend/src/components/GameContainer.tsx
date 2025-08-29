@@ -12,18 +12,18 @@ import PrestigePanel from './PrestigePanel';
 
 const GameContainer: React.FC = () => {
   const { connected } = useWallet();
-  const { isInitialized, error, loading } = useGameState();
+  const { isInitialized, error, loading, currentAccount } = useGameState();
 
-  if (!connected) {
+  if (!currentAccount) {
     return (
-      <div className="text-center py-20">
+      <div id="game-container" className="text-center py-20">
         <div className="text-6xl mb-8">🍪</div>
         <h2 className="text-3xl text-white mb-4">
           Welcome to Cookie Clicker Aptos!
         </h2>
         <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
           Experience the world's first cookie clicker game with orderless transaction processing.
-          Connect your wallet to start clicking and earning cookies on the Aptos blockchain!
+          Connect your wallet or use a local account to start clicking and earning cookies on the Aptos blockchain!
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mt-12 text-left">
           <div className="glass-card p-6 rounded-lg">
@@ -60,7 +60,7 @@ const GameContainer: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div id="game-container" className="max-w-7xl mx-auto">
       {error && (
         <Alert
           message="Game Error"

@@ -3,14 +3,14 @@ import { Card, Button, Typography, Row, Col, InputNumber, message, Space } from 
 import { RobotOutlined, PlusOutlined } from '@ant-design/icons';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useGameState } from '../hooks/useGameState';
-import { buyAutoClicker } from '../utils/transactionUtils';
+import { universalBuyAutoClicker } from '../utils/transactionUtils';
 import { GAME_CONSTANTS } from '../utils/aptosClient';
 
 const { Title, Text } = Typography;
 
 const AutoClickerPanel: React.FC = () => {
   const wallet = useWallet();
-  const { gameStats, autoClickers, optimisticCookies, transactionManager } = useGameState();
+  const { gameStats, autoClickers, optimisticCookies, transactionManager, currentAccount, accountType } = useGameState();
   const [purchasing, setPurchasing] = useState<number | null>(null);
   const [quantities, setQuantities] = useState<number[]>([1, 1, 1]);
 
@@ -53,7 +53,7 @@ const AutoClickerPanel: React.FC = () => {
     setPurchasing(typeId);
 
     try {
-      await buyAutoClicker(wallet, transactionManager, typeId, quantity);
+      await universalBuyAutoClicker(currentAccount, wallet, accountType, transactionManager, typeId, quantity);
       message.success(`${quantity} ${GAME_CONSTANTS.AUTO_CLICKER_NAMES[typeId]}${quantity > 1 ? 's' : ''} purchased!`);
     } catch (error: any) {
       console.error('Purchase failed:', error);
