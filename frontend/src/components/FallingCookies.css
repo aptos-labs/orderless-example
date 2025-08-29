@@ -1,0 +1,168 @@
+.falling-cookies-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.falling-cookie {
+  position: absolute;
+  top: -60px;
+  animation: fall linear, rotate linear;
+  animation-fill-mode: forwards;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+  opacity: 0.8;
+}
+
+@keyframes fall {
+  0% {
+    top: -60px;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    top: 100vh;
+    opacity: 0;
+  }
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(var(--rotation-end));
+  }
+}
+
+/* Add some sparkle effect on hover areas */
+.falling-cookie:nth-child(odd) {
+  animation-timing-function: ease-in-out;
+}
+
+.falling-cookie:nth-child(even) {
+  animation-timing-function: ease-in;
+}
+
+/* Slightly different falling patterns for variety */
+.falling-cookie:nth-child(3n) {
+  animation-name: fall-sway, rotate;
+}
+
+@keyframes fall-sway {
+  0% {
+    top: -60px;
+    opacity: 0;
+    transform: translateX(0px);
+  }
+  10% {
+    opacity: 0.8;
+  }
+  25% {
+    transform: translateX(10px);
+  }
+  50% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(8px);
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    top: 100vh;
+    opacity: 0;
+    transform: translateX(0px);
+  }
+}
+
+/* Add some glow effect for certain cookies */
+.falling-cookie:nth-child(7n) {
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3)) 
+          drop-shadow(0 0 10px rgba(255, 215, 0, 0.3));
+}
+
+/* Special styling for burst cookies */
+.burst-cookie {
+  animation-name: burst-fall, burst-rotate, burst-glow;
+  z-index: 5;
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.4)) 
+          drop-shadow(0 0 15px rgba(255, 215, 0, 0.8))
+          drop-shadow(0 0 25px rgba(255, 255, 255, 0.4));
+}
+
+@keyframes burst-fall {
+  0% {
+    top: -60px;
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  10% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  20% {
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    top: 100vh;
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes burst-rotate {
+  0% {
+    transform: rotate(0deg) scale(0.5);
+  }
+  10% {
+    transform: rotate(180deg) scale(1.2);
+  }
+  20% {
+    transform: rotate(360deg) scale(1);
+  }
+  100% {
+    transform: rotate(720deg) scale(0.8);
+  }
+}
+
+@keyframes burst-glow {
+  0%, 100% {
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.4)) 
+            drop-shadow(0 0 10px rgba(255, 215, 0, 0.6));
+  }
+  50% {
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.4)) 
+            drop-shadow(0 0 20px rgba(255, 215, 0, 1))
+            drop-shadow(0 0 30px rgba(255, 255, 255, 0.6));
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .falling-cookie {
+    font-size: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .falling-cookie {
+    font-size: 14px !important;
+  }
+}
