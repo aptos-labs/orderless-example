@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
-import { AccountAddress } from '@aptos-labs/ts-sdk';
+import { AccountAddress, Account } from '@aptos-labs/ts-sdk';
 import { aptos, VIEW_FUNCTIONS, GameStats, PlayerUpgrades, PlayerAutoClickers } from '../utils/aptosClient';
 import { TransactionManager, TransactionQueue } from '../utils/transactionUtils';
+import { localAccountManager } from '../utils/localAccount';
 
 interface GameState {
   // Game data
@@ -10,6 +11,10 @@ interface GameState {
   gameStats: GameStats | null;
   upgrades: PlayerUpgrades | null;
   autoClickers: PlayerAutoClickers | null;
+  
+  // Account management
+  currentAccount: Account | null;
+  accountType: 'wallet' | 'local' | null;
   
   // UI state
   loading: boolean;
@@ -28,6 +33,7 @@ interface GameState {
   resetPendingClicks: () => void;
   setError: (error: string | null) => void;
   setLoading: (loading: boolean) => void;
+  setLocalAccount: (account: Account | null) => void;
 }
 
 const GameContext = createContext<GameState | undefined>(undefined);
@@ -53,6 +59,10 @@ export function GameProvider({ children }: GameProviderProps) {
   const [upgrades, setUpgrades] = useState<PlayerUpgrades | null>(null);
   const [autoClickers, setAutoClickers] = useState<PlayerAutoClickers | null>(null);
   
+  // Account management
+  const [currentAccount, setCurrentAccount] = useState<Account | null>(null);
+  const [accountType, setAccountType] = useState<'wallet' | 'local' | null>(null);
+  
   // UI state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +77,7 @@ export function GameProvider({ children }: GameProviderProps) {
 
   // Refresh game data from blockchain
   const refreshGameData = async () => {
-    if (!connected || !account?.address) {
+    if (!currentAccount) {
       setIsInitialized(false);
       setGameStats(null);
       setUpgrades(null);
@@ -76,7 +86,7 @@ export function GameProvider({ children }: GameProviderProps) {
     }
 
     try {
-      const playerAddress = AccountAddress.from(account.address);
+      const playerAddress = currentAccount.accountAddress;
       
       // Check if player exists by trying to get their cookies
       try {
@@ -133,23 +143,48 @@ export function GameProvider({ children }: GameProviderProps) {
     }
   };
 
-  // Auto-refresh game data periodically
+  // Handle account switching (wallet vs local)
   useEffect(() => {
     if (connected && account) {
+      // Wallet is connected, prioritize wallet account
+      // Create a minimal account object for viewing data
+      const walletAccount = {
+        accountAddress: AccountAddress.from(account.address),
+      } as Account;
+      setCurrentAccount(walletAccount);
+      setAccountType('wallet');
+    } else {
+      // No wallet connected, check for local account
+      const localAccount = localAccountManager.getAccount();
+      const localData = localAccountManager.getAccountData();
+      
+      if (localAccount && localData?.initialized) {
+        setCurrentAccount(localAccount);
+        setAccountType('local');
+      } else {
+        setCurrentAccount(null);
+        setAccountType(null);
+      }
+    }
+  }, [connected, account?.address]);
+
+  // Auto-refresh game data periodically
+  useEffect(() => {
+    if (currentAccount) {
       refreshGameData();
       
-      // Refresh every 5 seconds when connected
+      // Refresh every 5 seconds when account is available
       const interval = setInterval(refreshGameData, 5000);
       return () => clearInterval(interval);
     } else {
-      // Clear data when wallet disconnects
+      // Clear data when no account is available
       setIsInitialized(false);
       setGameStats(null);
       setUpgrades(null);
       setAutoClickers(null);
       setOptimisticCookies(0);
     }
-  }, [connected, account?.address]);
+  }, [currentAccount]);
 
   // Update optimistic cookies when gameStats change
   useEffect(() => {
@@ -181,12 +216,29 @@ export function GameProvider({ children }: GameProviderProps) {
     setPendingClicks(0);
   };
 
+  const setLocalAccount = (account: Account | null) => {
+    if (account) {
+      setCurrentAccount(account);
+      setAccountType('local');
+    } else {
+      // If no wallet is connected, clear current account
+      if (!connected) {
+        setCurrentAccount(null);
+        setAccountType(null);
+      }
+    }
+  };
+
   const contextValue: GameState = {
     // Game data
     isInitialized,
     gameStats,
     upgrades,
     autoClickers,
+    
+    // Account management
+    currentAccount,
+    accountType,
     
     // UI state
     loading,
@@ -205,6 +257,7 @@ export function GameProvider({ children }: GameProviderProps) {
     resetPendingClicks,
     setError,
     setLoading,
+    setLocalAccount,
   };
 
   return (

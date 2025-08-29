@@ -1,4 +1,4 @@
-// import { any } from '@aptos-labs/ts-sdk';
+import { Account } from '@aptos-labs/ts-sdk';
 import { WalletContextState } from '@aptos-labs/wallet-adapter-react';
 import { aptos, CONTRACT_FUNCTIONS } from './aptosClient';
 
@@ -63,6 +63,60 @@ export class TransactionManager {
       this.queue = this.queue.slice(-50);
       this.notifyUpdate();
     }
+  }
+}
+
+// Universal transaction executor that works with both wallet and local accounts
+export class UniversalTransactionExecutor {
+  constructor(
+    private localAccount: Account | null,
+    private wallet: WalletContextState | null,
+    private accountType: 'wallet' | 'local' | null
+  ) {}
+
+  async executeTransaction(functionName: string, args: any[] = []): Promise<string> {
+    if (this.accountType === 'local' && this.localAccount) {
+      return this.executeWithLocalAccount(functionName, args);
+    } else if (this.accountType === 'wallet' && this.wallet) {
+      return this.executeWithWallet(functionName, args);
+    } else {
+      throw new Error('No valid account available for transaction');
+    }
+  }
+
+  private async executeWithLocalAccount(functionName: string, args: any[]): Promise<string> {
+    if (!this.localAccount) {
+      throw new Error('Local account not available');
+    }
+
+    const transaction = await aptos.transaction.build.simple({
+      sender: this.localAccount.accountAddress,
+      data: {
+        function: functionName,
+        arguments: args,
+      },
+    });
+
+    const committedTxn = await aptos.signAndSubmitTransaction({
+      signer: this.localAccount,
+      transaction,
+    });
+
+    return committedTxn.hash;
+  }
+
+  private async executeWithWallet(functionName: string, args: any[]): Promise<string> {
+    if (!this.wallet?.signAndSubmitTransaction) {
+      throw new Error('Wallet not available');
+    }
+
+    const response = await this.wallet.signAndSubmitTransaction({
+      function: functionName,
+      arguments: args,
+      type: 'entry_function_payload',
+    });
+
+    return response.hash;
   }
 }
 
